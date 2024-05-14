@@ -1,0 +1,54 @@
+version: '3.8'
+
+volumes:
+  postgresql_data:
+    driver: local
+
+networks:
+  ticket-master-network:
+    driver: bridge
+
+services:
+  nestjs-backend:
+    build:
+      context: ./nestjs-backend
+      dockerfile: Dockerfile
+    image: nestjs-backend-im:1.4.7
+    ports:
+      - "5525:3000"
+    depends_on:
+      - postgresql
+    volumes:
+      - ./nestjs-backend/src:/usr/src/ticket-master/src
+      - /usr/src/ticket-master/node_modules
+    networks:
+      - ticket-master-network
+
+  nextjs-frontend:
+    build:
+      context: ./nextjs-frontend
+      dockerfile: Dockerfile
+    image: nextjs-frontend-im:1.4.7
+    ports:
+      - "7749:3000"
+    depends_on:
+      - nestjs-backend
+    volumes:
+      - ./nextjs-frontend/app:/usr/src/ticket-master/app
+      - /usr/src/ticket-master/node_modules
+    networks:
+      - ticket-master-network
+
+  postgresql:
+    image: postgres:latest
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: ticket_master
+    volumes:
+      - postgresql_data:/var/lib/postgresql/data
+    networks:
+      - ticket-master-network
+
